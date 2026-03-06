@@ -47,7 +47,7 @@ button,input,select,textarea{
   pointer-events:none;
 }
 .wrap{
-  max-width:1280px;
+  max-width:1400px;
   margin:0 auto;
   position:relative;
   z-index:2;
@@ -88,16 +88,12 @@ button,input,select,textarea{
   100%{transform:translateX(70%)}
 }
 
+/* CHANGED: stacked layout */
 .topGrid{
   margin-top:18px;
   display:grid;
-  grid-template-columns: 1.15fr .85fr;
+  grid-template-columns:1fr;
   gap:18px;
-}
-@media (max-width: 980px){
-  .topGrid{
-    grid-template-columns:1fr;
-  }
 }
 
 .card{
@@ -134,7 +130,6 @@ button,input,select,textarea{
   margin:0;
 }
 
-/* updated from pill to status badge */
 .statusBadge{
   font-size:11px;
   font-weight:900;
@@ -201,10 +196,11 @@ button,input,select,textarea{
   z-index:2;
 }
 
+/* keep toolbar in one wide row when possible */
 .toolbar{
   margin-top:14px;
   display:grid;
-  grid-template-columns: 1.2fr .9fr .7fr auto auto;
+  grid-template-columns: 1.5fr 1fr 1fr auto auto;
   gap:10px;
   position:relative;
   z-index:2;
@@ -331,36 +327,34 @@ button,input,select,textarea{
   transform:none;
 }
 
+/* CHANGED: bigger top section */
 .listWrap{
   margin-top:14px;
-  display:flex;
-  flex-direction:column;
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(420px, 1fr));
   gap:14px;
   position:relative;
   z-index:2;
-  max-height:760px;
-  overflow:auto;
-  padding-right:4px;
+  max-height:none;
+  overflow:visible;
+  padding-right:0;
 }
-.listWrap::-webkit-scrollbar{
-  width:10px;
-}
-.listWrap::-webkit-scrollbar-thumb{
-  background:rgba(255,255,255,.12);
-  border-radius:999px;
+@media (max-width: 520px){
+  .listWrap{
+    grid-template-columns:1fr;
+  }
 }
 
-/* BIGGER SAVED IDP CARDS */
 .idpItem{
   border:1px solid rgba(255,255,255,.10);
   background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-  border-radius:18px;
-  padding:18px 18px 18px 22px;
+  border-radius:20px;
+  padding:22px 22px 22px 26px;
   cursor:pointer;
   transition:transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
   position:relative;
   overflow:hidden;
-  min-height:200px;
+  min-height:260px;
   text-align:left;
 }
 .idpItem::before{
@@ -390,7 +384,7 @@ button,input,select,textarea{
 }
 .itemName{
   font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;
-  font-size:28px;
+  font-size:32px;
   text-transform:uppercase;
   line-height:1;
   letter-spacing:.6px;
@@ -407,17 +401,17 @@ button,input,select,textarea{
   line-height:1.5;
 }
 .itemFocus{
-  margin-top:14px;
+  margin-top:16px;
   color:#fff;
-  font-size:15px;
-  line-height:1.6;
+  font-size:16px;
+  line-height:1.7;
   white-space:normal;
 }
 .itemSection{
-  margin-top:12px;
+  margin-top:14px;
   color:rgba(255,255,255,.86);
-  font-size:14px;
-  line-height:1.6;
+  font-size:15px;
+  line-height:1.7;
   white-space:normal;
 }
 .itemSection strong{
@@ -455,16 +449,24 @@ button,input,select,textarea{
 .detailsGrid{
   margin-top:14px;
   display:grid;
-  grid-template-columns:1fr;
+  grid-template-columns:1fr 1fr;
   gap:12px;
   position:relative;
   z-index:2;
+}
+@media (max-width: 900px){
+  .detailsGrid{
+    grid-template-columns:1fr;
+  }
 }
 .detailBlock{
   border:1px solid rgba(255,255,255,.10);
   background:rgba(0,0,0,.18);
   border-radius:14px;
   padding:12px;
+}
+.detailBlock.span2{
+  grid-column:1 / -1;
 }
 .detailLabel{
   display:inline-block;
@@ -547,7 +549,7 @@ button,input,select,textarea{
       <div class="card">
         <div class="hRow">
           <h3 class="hTitle">Saved IDPs</h3>
-          <div class="statusBadge accent" id="statusPill">Syncing</div>
+          <div class="statusBadge accent" id="statusPill">Review</div>
         </div>
 
         <div class="meta" id="listMeta">
@@ -594,20 +596,20 @@ button,input,select,textarea{
         </div>
 
         <div class="meta" id="detailMeta">
-          Select an IDP from the left to view the full development plan.
+          Select an IDP from above to view the full development plan.
         </div>
 
         <div class="smallLine"></div>
 
         <div id="detailEmpty" class="empty">
-          Choose a saved IDP to view its full details here.
+          Choose a saved IDP above to view its full details here.
         </div>
 
         <div id="detailPanel" style="display:none;">
           <div class="headerInfo" id="headerInfo"></div>
 
           <div class="detailsGrid">
-            <div class="detailBlock">
+            <div class="detailBlock span2">
               <div class="detailLabel">Primary Focus</div>
               <div class="detailValue" id="dFocus">—</div>
             </div>
@@ -622,26 +624,24 @@ button,input,select,textarea{
               <div class="detailValue" id="dImprovements">—</div>
             </div>
 
-            <div class="detailBlock">
+            <div class="detailBlock span2">
               <div class="detailLabel">Weekly Targets</div>
               <div class="detailValue" id="dTargets">—</div>
             </div>
 
-            <div class="detailBlock">
+            <div class="detailBlock span2">
               <div class="detailLabel">Coach Notes</div>
               <div class="detailValue" id="dNotes">—</div>
             </div>
 
-            <div class="detailMini">
-              <div class="detailBlock">
-                <div class="detailLabel">Player ID</div>
-                <div class="detailValue" id="dPlayerId">—</div>
-              </div>
+            <div class="detailBlock">
+              <div class="detailLabel">Player ID</div>
+              <div class="detailValue" id="dPlayerId">—</div>
+            </div>
 
-              <div class="detailBlock">
-                <div class="detailLabel">Team ID</div>
-                <div class="detailValue" id="dTeamId">—</div>
-              </div>
+            <div class="detailBlock">
+              <div class="detailLabel">Team ID</div>
+              <div class="detailValue" id="dTeamId">—</div>
             </div>
           </div>
 
@@ -920,7 +920,7 @@ function renderEmptyDetails(){
   document.getElementById("detailEmpty").style.display = "block";
   document.getElementById("detailPanel").style.display = "none";
   setDetailPill("No selection");
-  document.getElementById("detailMeta").textContent = "Select an IDP from the left to view the full development plan.";
+  document.getElementById("detailMeta").textContent = "Select an IDP from above to view the full development plan.";
 }
 
 function renderDetails(item){
@@ -988,7 +988,7 @@ function fillFromInit(data){
 }
 
 function requestRefresh(){
-  setPill("Syncing", "syncing");
+  setPill("Review", "syncing");
   try {
     window.parent.postMessage({
       type: "MY_IDP_REQUEST_LIST",
@@ -1121,7 +1121,7 @@ window.addEventListener("message", (ev) => {
 
 bindFieldTitleAnimations();
 renderEmptyDetails();
-setPill("Syncing", "syncing");
+setPill("Review", "syncing");
 
 try {
   window.parent.postMessage({ type:"MY_IDP_READY" }, "*");
