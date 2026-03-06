@@ -388,7 +388,9 @@ button,input,select,textarea{
   text-transform:uppercase;
   line-height:1;
   letter-spacing:.6px;
+  color:#fff;
 }
+
 .itemDate{
   font-size:13px;
   color:rgba(255,255,255,.72);
@@ -942,12 +944,11 @@ function renderDetails(item){
   document.getElementById("dTeamId").textContent = safe(item.teamId);
 
   const headerInfo = document.getElementById("headerInfo");
-  headerInfo.innerHTML = `
-    <div class="infoPill">${escapeHtml(safe(item.playerName, "Player"))}</div>
-    <div class="infoPill">${escapeHtml(safe(item.teamName || item.teamId, "Team"))}</div>
-    <div class="infoPill">${escapeHtml(formatDate(item.idpDate || item.createdAt))}</div>
-    ${item.coachName ? `<div class="infoPill">${escapeHtml(item.coachName)}</div>` : ""}
-  `;
+headerInfo.innerHTML = `
+  <div class="infoPill">${escapeHtml(safe(item.playerName, "Player"))}</div>
+  <div class="infoPill">${escapeHtml(safe(item.teamName || item.teamId, "Team"))}</div>
+  <div class="infoPill">${escapeHtml(formatDate(item.idpDate || item.createdAt))}</div>
+`;
 
   document.getElementById("btnOpenCreator").disabled = false;
   document.getElementById("btnRequestEdit").disabled = false;
