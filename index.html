@@ -88,7 +88,6 @@ button,input,select,textarea{
   100%{transform:translateX(70%)}
 }
 
-/* CHANGED: stacked layout */
 .topGrid{
   margin-top:18px;
   display:grid;
@@ -196,7 +195,6 @@ button,input,select,textarea{
   z-index:2;
 }
 
-/* keep toolbar in one wide row when possible */
 .toolbar{
   margin-top:14px;
   display:grid;
@@ -327,7 +325,6 @@ button,input,select,textarea{
   transform:none;
 }
 
-/* CHANGED: bigger top section */
 .listWrap{
   margin-top:14px;
   display:grid;
@@ -437,6 +434,44 @@ button,input,select,textarea{
   color:rgba(255,255,255,.82);
 }
 
+.ratingRow{
+  margin-top:14px;
+  display:grid;
+  grid-template-columns:repeat(5, minmax(0, 1fr));
+  gap:8px;
+}
+@media (max-width: 900px){
+  .ratingRow{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px){
+  .ratingRow{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+}
+.ratingChip{
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);
+  border-radius:12px;
+  padding:10px 8px;
+}
+.ratingChipName{
+  font-size:10px;
+  line-height:1.2;
+  font-weight:900;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.66);
+}
+.ratingChipVal{
+  margin-top:6px;
+  font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;
+  font-size:22px;
+  line-height:1;
+  color:#fff;
+}
+
 .empty{
   margin-top:14px;
   border:1px dashed rgba(255,255,255,.14);
@@ -526,6 +561,16 @@ button,input,select,textarea{
   border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.04);
   color:rgba(255,255,255,.84);
+}
+
+.chartWrap{
+  margin-top:14px;
+  height:420px;
+  position:relative;
+}
+.chartCanvas{
+  width:100% !important;
+  height:100% !important;
 }
 
 .actions{
@@ -636,6 +681,39 @@ button,input,select,textarea{
               <div class="detailValue" id="dNotes">—</div>
             </div>
 
+            <div class="detailBlock span2">
+              <div class="detailLabel">Development Ratings</div>
+              <div class="ratingRow">
+                <div class="ratingChip">
+                  <div class="ratingChipName">Ball Mastery</div>
+                  <div class="ratingChipVal" id="dBallMastery">—</div>
+                </div>
+                <div class="ratingChip">
+                  <div class="ratingChipName">Dribbling</div>
+                  <div class="ratingChipVal" id="dDribbling">—</div>
+                </div>
+                <div class="ratingChip">
+                  <div class="ratingChipName">Passing</div>
+                  <div class="ratingChipVal" id="dPassing">—</div>
+                </div>
+                <div class="ratingChip">
+                  <div class="ratingChipName">Finishing</div>
+                  <div class="ratingChipVal" id="dFinishing">—</div>
+                </div>
+                <div class="ratingChip">
+                  <div class="ratingChipName">Defending</div>
+                  <div class="ratingChipVal" id="dDefending">—</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="detailBlock span2">
+              <div class="detailLabel">Development Graph</div>
+              <div class="chartWrap">
+                <canvas id="radarChart" class="chartCanvas"></canvas>
+              </div>
+            </div>
+
             <div class="detailBlock">
               <div class="detailLabel">Player ID</div>
               <div class="detailValue" id="dPlayerId">—</div>
@@ -657,6 +735,7 @@ button,input,select,textarea{
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const CLUB_THEMES = {
   default:    { accent:"#7B2EFF", accent2:"#B266FF", bgGlow:"rgba(123,46,255,.18)" },
@@ -673,10 +752,15 @@ let CURRENT_CONTEXT = {
   coachName: "",
   clubSlug: "default"
 };
+let radarChart = null;
 
 function clean(v){ return String(v || "").trim(); }
 function lower(v){ return clean(v).toLowerCase(); }
 function safe(v, fallback="—"){ return clean(v) || fallback; }
+function toNumber(v, fallback = 0){
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
 
 function setPill(text, mode = "normal"){
   const el = document.getElementById("statusPill");
@@ -708,6 +792,7 @@ function applyTheme({ clubSlug, accent, accent2, glow, source }) {
   r.setProperty("--clubGlow", finalGlow);
 
   console.log("MY IDP theme applied:", { slug, finalAccent, finalAccent2, finalGlow, source });
+  updateChartTheme();
 }
 
 function syncFieldValueState(el){
@@ -758,6 +843,11 @@ function normalizeIdp(item = {}){
     improvements: clean(item.improvements),
     targets: clean(item.targets),
     notes: clean(item.notes),
+    ballMastery: toNumber(item.ballMastery, 0),
+    dribbling: toNumber(item.dribbling, 0),
+    passing: toNumber(item.passing, 0),
+    finishing: toNumber(item.finishing, 0),
+    defending: toNumber(item.defending, 0),
     coachId: clean(item.coachId),
     coachName: clean(item.coachName),
     createdAt: clean(item.createdAt || item._createdDate),
@@ -892,6 +982,29 @@ function renderList(items = []){
 
       <div class="itemSection"><strong>Weekly Targets:</strong> ${escapeHtml(shorten(item.targets, 300))}</div>
 
+      <div class="ratingRow">
+        <div class="ratingChip">
+          <div class="ratingChipName">Ball Mastery</div>
+          <div class="ratingChipVal">${escapeHtml(String(item.ballMastery || 0))}</div>
+        </div>
+        <div class="ratingChip">
+          <div class="ratingChipName">Dribbling</div>
+          <div class="ratingChipVal">${escapeHtml(String(item.dribbling || 0))}</div>
+        </div>
+        <div class="ratingChip">
+          <div class="ratingChipName">Passing</div>
+          <div class="ratingChipVal">${escapeHtml(String(item.passing || 0))}</div>
+        </div>
+        <div class="ratingChip">
+          <div class="ratingChipName">Finishing</div>
+          <div class="ratingChipVal">${escapeHtml(String(item.finishing || 0))}</div>
+        </div>
+        <div class="ratingChip">
+          <div class="ratingChipName">Defending</div>
+          <div class="ratingChipVal">${escapeHtml(String(item.defending || 0))}</div>
+        </div>
+      </div>
+
       <div class="itemSection"><strong>Coach Notes:</strong> ${escapeHtml(shorten(item.notes, 260))}</div>
 
       <div class="itemTags">
@@ -923,6 +1036,7 @@ function renderEmptyDetails(){
   document.getElementById("detailPanel").style.display = "none";
   setDetailPill("No selection");
   document.getElementById("detailMeta").textContent = "Select an IDP from above to view the full development plan.";
+  updateRadarChart([0,0,0,0,0]);
 }
 
 function renderDetails(item){
@@ -943,12 +1057,26 @@ function renderDetails(item){
   document.getElementById("dPlayerId").textContent = safe(item.playerId);
   document.getElementById("dTeamId").textContent = safe(item.teamId);
 
+  document.getElementById("dBallMastery").textContent = `${item.ballMastery || 0}/10`;
+  document.getElementById("dDribbling").textContent = `${item.dribbling || 0}/10`;
+  document.getElementById("dPassing").textContent = `${item.passing || 0}/10`;
+  document.getElementById("dFinishing").textContent = `${item.finishing || 0}/10`;
+  document.getElementById("dDefending").textContent = `${item.defending || 0}/10`;
+
   const headerInfo = document.getElementById("headerInfo");
-headerInfo.innerHTML = `
-  <div class="infoPill">${escapeHtml(safe(item.playerName, "Player"))}</div>
-  <div class="infoPill">${escapeHtml(safe(item.teamName || item.teamId, "Team"))}</div>
-  <div class="infoPill">${escapeHtml(formatDate(item.idpDate || item.createdAt))}</div>
-`;
+  headerInfo.innerHTML = `
+    <div class="infoPill">${escapeHtml(safe(item.playerName, "Player"))}</div>
+    <div class="infoPill">${escapeHtml(safe(item.teamName || item.teamId, "Team"))}</div>
+    <div class="infoPill">${escapeHtml(formatDate(item.idpDate || item.createdAt))}</div>
+  `;
+
+  updateRadarChart([
+    item.ballMastery || 0,
+    item.dribbling || 0,
+    item.passing || 0,
+    item.finishing || 0,
+    item.defending || 0
+  ]);
 
   document.getElementById("btnOpenCreator").disabled = false;
   document.getElementById("btnRequestEdit").disabled = false;
@@ -1016,6 +1144,110 @@ function escapeHtml(str){
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function buildRadarChart(){
+  const ctx = document.getElementById("radarChart");
+  if (!ctx) return;
+
+  radarChart = new Chart(ctx, {
+    type: "radar",
+    data: {
+      labels: ["Ball Mastery","Dribbling","Passing","Finishing","Defending"],
+      datasets: [{
+        label: "Player Score",
+        data: [0,0,0,0,0],
+        fill: true,
+        backgroundColor: "rgba(123,46,255,.20)",
+        borderColor: "#7B2EFF",
+        borderWidth: 3,
+        pointBackgroundColor: ["#8B5CF6","#22D3EE","#60A5FA","#F59E0B","#34D399"],
+        pointBorderColor: "#fff",
+        pointHoverBackgroundColor: "#fff",
+        pointHoverBorderColor: "#7B2EFF",
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0.35
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 700,
+        easing: "easeOutQuart"
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "rgba(10,10,10,.92)",
+          titleColor: "#fff",
+          bodyColor: "rgba(255,255,255,.88)",
+          borderColor: "rgba(255,255,255,.12)",
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            label: (ctx) => `${ctx.label}: ${ctx.raw}/10`
+          }
+        }
+      },
+      scales: {
+        r: {
+          min: 0,
+          max: 10,
+          ticks: {
+            stepSize: 2,
+            color: "rgba(255,255,255,.55)",
+            backdropColor: "transparent",
+            font: { size: 11, weight: "700" }
+          },
+          grid: {
+            color: "rgba(255,255,255,.10)"
+          },
+          angleLines: {
+            color: "rgba(255,255,255,.10)"
+          },
+          pointLabels: {
+            color: "rgba(255,255,255,.9)",
+            font: {
+              size: 13,
+              weight: "700"
+            }
+          }
+        }
+      }
+    }
+  });
+
+  updateChartTheme();
+}
+
+function updateChartTheme(){
+  if (!radarChart) return;
+  const styles = getComputedStyle(document.documentElement);
+  const accent = styles.getPropertyValue("--accent").trim() || "#7B2EFF";
+
+  radarChart.data.datasets[0].borderColor = accent;
+
+  if (accent.startsWith("#")) {
+    const hex = accent.replace("#", "");
+    if (hex.length === 6) {
+      const r = parseInt(hex.slice(0,2),16);
+      const g = parseInt(hex.slice(2,4),16);
+      const b = parseInt(hex.slice(4,6),16);
+      radarChart.data.datasets[0].backgroundColor = `rgba(${r},${g},${b},0.20)`;
+      radarChart.data.datasets[0].pointHoverBorderColor = accent;
+    }
+  }
+
+  radarChart.update();
+}
+
+function updateRadarChart(values){
+  if (!radarChart) return;
+  radarChart.data.datasets[0].data = Array.isArray(values) ? values : [0,0,0,0,0];
+  radarChart.update();
 }
 
 document.getElementById("searchInput").addEventListener("input", filterAndRender);
@@ -1121,6 +1353,7 @@ window.addEventListener("message", (ev) => {
 });
 
 bindFieldTitleAnimations();
+buildRadarChart();
 renderEmptyDetails();
 setPill("Review", "syncing");
 
